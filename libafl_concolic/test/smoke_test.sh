@@ -14,9 +14,9 @@ cd "$SCRIPT_DIR"
 # clone symcc
 if [ ! -d "symcc" ]; then
     echo "cloning symcc"
-    git clone https://github.com/AFLplusplus/symcc.git symcc
+    git clone https://github.com/sfu-rsl/symcc.git symcc
     cd symcc
-    git checkout 2a3229da6101596af220f20fef5085e59537abcb
+    git checkout cf06106ed32c98a9b05316e9694fc44d1a5c68d0
     cd ..
 fi
 

@@ -1,10 +1,10 @@
 //! This is a 'meta-package' for libafl that exposes a consistent URL and commit hash for the
-//! [`SymCC` fork](https://github.com/AFLplusplus/symcc).
+//! [`SymCC` fork](https://github.com/sfu-rsl/symcc).
 
 /// The URL of the `LibAFL` `SymCC` fork.
-pub const SYMCC_REPO_URL: &str = "https://github.com/AFLplusplus/symcc.git";
+pub const SYMCC_REPO_URL: &str = "https://github.com/sfu-rsl/symcc.git";
 /// The commit of the `LibAFL` `SymCC` fork.
-pub const SYMCC_REPO_COMMIT: &str = "2a3229da6101596af220f20fef5085e59537abcb";
+pub const SYMCC_REPO_COMMIT: &str = "cf06106ed32c98a9b05316e9694fc44d1a5c68d0";
 
 #[cfg(feature = "clone")]
 mod clone {
