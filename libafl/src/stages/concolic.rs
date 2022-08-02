@@ -98,7 +98,7 @@ use crate::monitors::PerfFeature;
 
 #[cfg(feature = "concolic_mutation")]
 #[allow(clippy::too_many_lines)]
-fn generate_mutations(iter: impl Iterator<Item = (SymExprRef, SymExpr)>) -> Vec<Vec<(usize, u8)>> {
+pub fn generate_mutations(iter: impl Iterator<Item = (SymExprRef, SymExpr)>) -> Vec<Vec<(usize, u8)>> {
     use hashbrown::HashMap;
     use z3::{
         ast::{Ast, Bool, Dynamic, BV},
