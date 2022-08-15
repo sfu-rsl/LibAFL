@@ -318,19 +318,29 @@ where
         let res = match child
             .wait_timeout(Duration::from_secs(5))
             .expect("waiting on child failed")
-            .map(|status| status.signal())
         {
-            // for reference: https://www.man7.org/linux/man-pages/man7/signal.7.html
-            Some(Some(9)) => Ok(ExitKind::Oom),
-            Some(Some(_)) => Ok(ExitKind::Crash),
-            Some(None) => Ok(ExitKind::Ok),
+            Some(status) => {
+                match status.code()
+                {
+                    Some(0) => ExitKind::Ok,
+                    Some(_) => ExitKind::Crash,
+                    None => {
+                        match status.signal()
+                        {
+                            // for reference: https://www.man7.org/linux/man-pages/man7/signal.7.html
+                            Some(9) => ExitKind::Oom,
+                            _ => ExitKind::Crash,
+                        }
+                    }
+                }
+            }
             None => {
                 // if this fails, there is not much we can do. let's hope it failed because the process finished
                 // in the meantime.
                 drop(child.kill());
                 // finally, try to wait to properly clean up system resources.
                 drop(child.wait());
-                Ok(ExitKind::Timeout)
+                ExitKind::Timeout
             }
         };
 
@@ -353,7 +363,7 @@ where
             self.observers.observe_stdout(&stdout);
         }
 
-        res
+        Ok(res)
     }
 }
 
