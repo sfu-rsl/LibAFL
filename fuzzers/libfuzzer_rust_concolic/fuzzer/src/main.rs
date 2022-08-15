@@ -173,6 +173,7 @@ fn fuzz(
         use wait_timeout::ChildExt;
         use libafl::inputs::HasBytesVec;
         
+        println!("ZZZZZZZZZZZZZZZZZZZZZZZ");
         let fic_out = format!("/tmp/symrustc_libafl_input_harness_{:?}", process::id()); //TODO: tempfile()
         input.to_file(&fic_out).expect("failed writing");
         match main0(vec!["".into(), fic_out.into()]) {
@@ -202,6 +203,7 @@ fn fuzz(
 
     // In case the corpus is empty (on first run), reset
     if state.corpus().count() < 1 {
+        println!("====================1");
         state
             .load_initial_inputs_forced(
                 &mut fuzzer,
@@ -250,6 +252,7 @@ fn fuzz(
             SimpleConcolicMutationalStage::default(),
         );
 
+        println!("====================0");
         fuzzer.fuzz_loop(&mut stages, &mut executor, &mut state, &mut restarting_mgr)?;
     } else {
         // The order of the stages matter!
@@ -268,11 +271,14 @@ pub struct MyCommandConfigurator;
 impl CommandConfigurator for MyCommandConfigurator {
     fn spawn_child<I: Input + HasTargetBytes>(&mut self, input: &I) -> Result<Child, Error> {
         let fic_out = format!("/tmp/symrustc_libafl_input_symcc_{:?}", process::id()); //TODO: tempfile()
+        //println!("input: {:?} {:?}", fic_out, input);
         input.to_file(&fic_out)?;
 
         Ok(Command::new("./target_symcc.out")
             .arg(&fic_out)
             .stdin(Stdio::null())
+            // .stdout(Stdio::null())
+            // .stderr(Stdio::null())
             .env("SYMCC_INPUT_FILE", &fic_out)
             .spawn()
             .expect("failed to start process"))

@@ -344,6 +344,7 @@ where
     {
         let mut res = ExecuteInputResult::None;
 
+        println!("JJJ objective {:?}", exit_kind);
         #[cfg(not(feature = "introspection"))]
         let is_solution = self
             .objective_mut()
@@ -357,6 +358,7 @@ where
         if is_solution {
             res = ExecuteInputResult::Solution;
         } else {
+            println!("JJJ feedback");
             #[cfg(not(feature = "introspection"))]
             let is_corpus = self
                 .feedback_mut()
@@ -367,18 +369,20 @@ where
                 .feedback_mut()
                 .is_interesting_introspection(state, manager, &input, observers, exit_kind)?;
 
-            if is_corpus {
+            if is_corpus {// || state.corpus().count() < 2
                 res = ExecuteInputResult::Corpus;
             }
         }
 
         match res {
             ExecuteInputResult::None => {
+                println!("BBBB None");
                 self.feedback_mut().discard_metadata(state, &input)?;
                 self.objective_mut().discard_metadata(state, &input)?;
                 Ok((res, None))
             }
             ExecuteInputResult::Corpus => {
+                println!("BBBB Corpus");
                 // Not a solution
                 self.objective_mut().discard_metadata(state, &input)?;
 
@@ -411,6 +415,7 @@ where
                 Ok((res, Some(idx)))
             }
             ExecuteInputResult::Solution => {
+                println!("BBBB Solution");
                 // Not interesting
                 self.feedback_mut().discard_metadata(state, &input)?;
 
@@ -456,8 +461,10 @@ where
         E: Executor<EM, Self> + HasObservers<Observers = OT, State = Self::State>,
         EM: EventFirer<State = Self::State>,
     {
+        println!("EEEE0(b) {:?}", input);
         let exit_kind = self.execute_input(state, executor, manager, &input)?;
         let observers = executor.observers();
+        println!("EEEE1(b) ");
         self.process_execution(state, manager, input, observers, &exit_kind, send_events)
     }
 }
@@ -493,9 +500,11 @@ where
         manager: &mut EM,
         input: <CS::State as UsesInput>::Input,
     ) -> Result<usize, Error> {
+        println!("EEEE0(a) {:?}", input);
         let exit_kind = self.execute_input(state, executor, manager, &input)?;
         let observers = executor.observers();
         // Always consider this to be "interesting"
+        println!("EEEE1(a) ");
 
         // Not a solution
         self.objective_mut().discard_metadata(state, &input)?;
@@ -559,8 +568,10 @@ where
         #[cfg(feature = "introspection")]
         state.introspection_monitor_mut().reset_stage_index();
 
+        println!("0000000000000000 A");
         // Execute all stages
         stages.perform_all(self, executor, state, manager, idx)?;
+        println!("0000000000000000 B");
 
         // Init timer for manager
         #[cfg(feature = "introspection")]

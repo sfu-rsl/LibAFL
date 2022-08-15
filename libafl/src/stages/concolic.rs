@@ -155,7 +155,9 @@ fn generate_mutations(iter: impl Iterator<Item = (SymExprRef, SymExpr)>) -> Vec<
         };
     }
 
+    // println!("IIII ");
     for (id, msg) in iter {
+        // println!("    {:?} {:?}", id, msg);
         let z3_expr: Option<Dynamic> = match msg {
             SymExpr::InputByte { offset, .. } => {
                 Some(BV::new_const(&ctx, Symbol::Int(offset as u32), 8).into())
@@ -318,6 +320,7 @@ fn generate_mutations(iter: impl Iterator<Item = (SymExprRef, SymExpr)>) -> Vec<
                                 panic!();
                             }
                         }
+                        // println!("IIII0 {:?}", replacements);
                         res.push(replacements);
                         solver.pop(1);
                     }
@@ -369,6 +372,7 @@ where
         manager: &mut EM,
         corpus_idx: usize,
     ) -> Result<(), Error> {
+        println!("0000000000000000 1");
         start_timer!(state);
         let testcase = state.corpus().get(corpus_idx)?.clone();
         mark_feature_time!(state, PerfFeature::GetInputFromCorpus);
@@ -391,6 +395,11 @@ where
                 for (index, new_byte) in mutation {
                     input_copy.bytes_mut()[index] = new_byte;
                 }
+                print!("AAA1");
+                for c in input_copy.bytes() {
+                    print!(" {:#04x}", c)
+                }
+                println!("");
                 // Time is measured directly the `evaluate_input` function
                 let _ = fuzzer.evaluate_input(state, executor, manager, input_copy)?;
             }
