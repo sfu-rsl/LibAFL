@@ -86,11 +86,14 @@ pub fn main() {
 
 fn spawn_child0<I: Input + HasTargetBytes>(input: &I) -> Result<Child, Error> {
         let fic_out = env::current_dir().unwrap().join("cur_input").to_string_lossy().to_string();
+        //println!("input: {:?} {:?}", fic_out, input);
         input.to_file(&fic_out)?;
 
         Ok(Command::new("./target_symcc0.out")
             .arg(&fic_out)
             .stdin(Stdio::null())
+            // .stdout(Stdio::null())
+            // .stderr(Stdio::null())
             .env("SYMCC_NO_SYMBOLIC_INPUT", "yes")
             .spawn()
             .expect("failed to start process"))
@@ -183,6 +186,7 @@ fn fuzz(
         use std::os::unix::prelude::ExitStatusExt;
         use wait_timeout::ChildExt;
 
+        println!("ZZZZZZZZZZZZZZZZZZZZZZZ");
         let mut child = spawn_child0(input).expect("spawning failed");
         match child
             .wait_timeout(Duration::from_secs(5))
@@ -244,6 +248,7 @@ fn fuzz(
 
     // In case the corpus is empty (on first run), reset
     if state.corpus().count() < 1 {
+        println!("====================1");
         state
             .load_initial_inputs_forced(
                 &mut fuzzer,
@@ -292,6 +297,7 @@ fn fuzz(
             SimpleConcolicMutationalStage::default(),
         );
 
+        println!("====================0");
         fuzzer.fuzz_loop(&mut stages, &mut executor, &mut state, &mut restarting_mgr)?;
     } else {
         // The order of the stages matter!
@@ -310,11 +316,14 @@ pub struct MyCommandConfigurator;
 impl CommandConfigurator for MyCommandConfigurator {
     fn spawn_child<I: Input + HasTargetBytes>(&mut self, input: &I) -> Result<Child, Error> {
         let fic_out = env::current_dir().unwrap().join("cur_input").to_string_lossy().to_string();
+        //println!("input: {:?} {:?}", fic_out, input);
         input.to_file(&fic_out)?;
 
         Ok(Command::new("./target_symcc.out")
             .arg(&fic_out)
             .stdin(Stdio::null())
+            // .stdout(Stdio::null())
+            // .stderr(Stdio::null())
             .env("SYMCC_INPUT_FILE", &fic_out)
             .spawn()
             .expect("failed to start process"))
