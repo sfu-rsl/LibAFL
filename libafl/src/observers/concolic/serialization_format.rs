@@ -249,15 +249,16 @@ impl<W: Write + Seek> MessageFileWriter<W> {
         // calculate size of trace
         let end_pos = self.writer.stream_position()?;
         let trace_header_len = 0_u64.to_le_bytes().len() as u64;
-        assert!(end_pos > self.writer_start_position + trace_header_len);
-        let trace_length = end_pos - self.writer_start_position - trace_header_len;
+        if end_pos > self.writer_start_position + trace_header_len {
+            let trace_length = end_pos - self.writer_start_position - trace_header_len;
 
-        // write trace size to beginning of trace
-        self.writer
-            .seek(SeekFrom::Start(self.writer_start_position))?;
-        self.writer.write_all(&trace_length.to_le_bytes())?;
-        // rewind to previous position
-        self.writer.seek(SeekFrom::Start(end_pos))?;
+            // write trace size to beginning of trace
+            self.writer
+                .seek(SeekFrom::Start(self.writer_start_position))?;
+            self.writer.write_all(&trace_length.to_le_bytes())?;
+            // rewind to previous position
+            self.writer.seek(SeekFrom::Start(end_pos))?;
+        }
         Ok(())
     }
 
