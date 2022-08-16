@@ -248,14 +248,13 @@ pub struct MyCommandConfigurator;
 
 impl CommandConfigurator for MyCommandConfigurator {
     fn spawn_child<I: Input + HasTargetBytes>(&mut self, input: &I) -> Result<Child, Error> {
-        input.to_file("cur_input")?;
+        let fic_out = env::current_dir().unwrap().join("cur_input").to_string_lossy().to_string();
+        input.to_file(&fic_out)?;
 
         Ok(Command::new("./target_symcc.out")
-            .arg("cur_input")
+            .arg(&fic_out)
             .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .env("SYMCC_INPUT_FILE", "cur_input")
+            .env("SYMCC_INPUT_FILE", &fic_out)
             .spawn()
             .expect("failed to start process"))
     }
