@@ -50,9 +50,12 @@ use libafl::{
 };
 
 use libafl_targets::{
-    libfuzzer_initialize, libfuzzer_test_one_input, CmpLogObserver, CMPLOG_MAP, EDGES_MAP,
+    libfuzzer_initialize, CmpLogObserver, CMPLOG_MAP, EDGES_MAP,
     MAX_EDGES_NUM,
 };
+
+#[cfg(all(feature = "std", unix))]
+use std::time::Duration;
 
 #[derive(Debug, StructOpt)]
 struct Opt {
@@ -79,6 +82,18 @@ pub fn main() {
         opt.concolic,
     )
     .expect("An error occurred while fuzzing");
+}
+
+fn spawn_child0<I: Input + HasTargetBytes>(input: &I) -> Result<Child, Error> {
+        let fic_out = env::current_dir().unwrap().join("cur_input").to_string_lossy().to_string();
+        input.to_file(&fic_out)?;
+
+        Ok(Command::new("./target_symcc0.out")
+            .arg(&fic_out)
+            .stdin(Stdio::null())
+            .env("SYMCC_NO_SYMBOLIC_INPUT", "yes")
+            .spawn()
+            .expect("failed to start process"))
 }
 
 /// The actual fuzzer
@@ -157,10 +172,38 @@ fn fuzz(
 
     // The wrapped harness function, calling out to the LLVM-style harness
     let mut harness = |input: &BytesInput| {
-        let target = input.target_bytes();
-        let buf = target.as_slice();
-        libfuzzer_test_one_input(buf);
-        ExitKind::Ok
+        use std::os::unix::prelude::ExitStatusExt;
+        use wait_timeout::ChildExt;
+
+        let mut child = spawn_child0(input).expect("spawning failed");
+        match child
+            .wait_timeout(Duration::from_secs(5))
+            .expect("waiting on child failed")
+        {
+            Some(status) => {
+                match status.code()
+                {
+                    Some(0) => ExitKind::Ok,
+                    Some(_) => ExitKind::Crash,
+                    None => {
+                        match status.signal()
+                        {
+                            // for reference: https://www.man7.org/linux/man-pages/man7/signal.7.html
+                            Some(9) => ExitKind::Oom,
+                            _ => ExitKind::Crash,
+                        }
+                    }
+                }
+            }
+            None => {
+                // if this fails, there is not much we can do. let's hope it failed because the process finished
+                // in the meantime.
+                drop(child.kill());
+                // finally, try to wait to properly clean up system resources.
+                drop(child.wait());
+                ExitKind::Timeout
+            }
+        }
     };
 
     // Create the executor for an in-process function with just one observer for edge coverage
