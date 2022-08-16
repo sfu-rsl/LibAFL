@@ -227,7 +227,7 @@ fn fuzz(
     // In case the corpus is empty (on first run), reset
     if state.corpus().count() < 1 {
         state
-            .load_initial_inputs(
+            .load_initial_inputs_forced(
                 &mut fuzzer,
                 &mut executor,
                 &mut restarting_mgr,
