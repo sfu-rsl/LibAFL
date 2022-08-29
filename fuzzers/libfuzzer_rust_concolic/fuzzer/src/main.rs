@@ -95,6 +95,14 @@ fn spawn_child0<I: Input + HasTargetBytes>(input: &I) -> Result<Child, Error> {
             .expect("failed to start process"))
 }
 
+fn eprint_input_exit<I: Input + HasTargetBytes>(input: &I) {
+    eprint!("error: on");
+    for c in &input.target_bytes() {
+        eprint!(" {:#04x}", c)
+    }
+    eprint!(", exit ");
+}
+
 /// The actual fuzzer
 fn fuzz(
     corpus_dirs: &[PathBuf],
@@ -183,9 +191,16 @@ fn fuzz(
                 match status.code()
                 {
                     Some(0) => ExitKind::Ok,
-                    Some(_) => ExitKind::Crash,
+                    Some(code) => {
+                        eprint_input_exit(input);
+                        eprintln!("code: {:?}", code);
+                        ExitKind::Crash
+                    }
                     None => {
-                        match status.signal()
+                        let signal = status.signal();
+                        eprint_input_exit(input);
+                        eprintln!("signal: {:?}", signal);
+                        match signal
                         {
                             // for reference: https://www.man7.org/linux/man-pages/man7/signal.7.html
                             Some(9) => ExitKind::Oom,
@@ -195,6 +210,8 @@ fn fuzz(
                 }
             }
             None => {
+                eprint_input_exit(input);
+                eprintln!("timeout");
                 // if this fails, there is not much we can do. let's hope it failed because the process finished
                 // in the meantime.
                 drop(child.kill());
