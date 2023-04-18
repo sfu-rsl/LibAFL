@@ -70,6 +70,10 @@ include!(concat!(env!("OUT_DIR"), "/cpp_exports_macro.rs"));
 include!(concat!(env!("OUT_DIR"), "/rust_exports_macro.rs"));
 
 macro_rules! rust_runtime_function_declaration {
+    (pub fn initialize(), $c_name:ident;) => {
+        fn initialize(&mut self) {std::default::Default::default()}
+    };
+
     (pub fn expression_unreachable(expressions: *mut RSymExpr, num_elements: usize), $c_name:ident;) => {
         fn expression_unreachable(&mut self, exprs: &[RSymExpr]);
     };
@@ -130,6 +134,17 @@ macro_rules! unwrap_option {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! export_rust_runtime_fn {
+    // special case for initialize
+    (pub fn initialize(), $c_name:ident; $rt_cb:path) => {
+        #[allow(clippy::missing_safety_doc)]
+        #[no_mangle]
+        pub unsafe extern "C" fn _rsym_initialize() {
+            $rt_cb(|rt| {
+                rt.initialize();
+            })
+        }
+    };
+
     // special case for expression_unreachable, because we need to be convert pointer+length to slice
     (pub fn expression_unreachable(expressions: *mut RSymExpr, num_elements: usize), $c_name:ident; $rt_cb:path) => {
         #[allow(clippy::missing_safety_doc)]
@@ -204,6 +219,15 @@ impl<RT> OptionalRuntime<RT> {
 }
 
 macro_rules! rust_runtime_function_declaration {
+    (pub fn initialize(), $c_name:ident;) => {
+        #[allow(clippy::default_trait_access)]
+        fn initialize(&mut self) {
+            if let Some(inner) = &mut self.inner {
+                inner.initialize();
+            }
+        }
+    };
+
     (pub fn expression_unreachable(expressions: *mut RSymExpr, num_elements: usize), $c_name:ident;) => {
         #[allow(clippy::default_trait_access)]
         fn expression_unreachable(&mut self, exprs: &[RSymExpr]) {

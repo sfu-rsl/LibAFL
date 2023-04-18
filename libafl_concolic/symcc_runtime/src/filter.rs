@@ -241,3 +241,19 @@ impl Filter for NoFloat {
         false
     }
 }
+
+pub struct Initialization {
+    init: fn() -> (),
+}
+
+impl Initialization {
+    pub fn new(init: fn() -> ()) -> Self {
+        Self { init }
+    }
+}
+
+impl Filter for Initialization {
+    fn initialize(&mut self) {
+        (self.init)()
+    }
+}
