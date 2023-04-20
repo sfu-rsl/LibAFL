@@ -52,6 +52,7 @@ use libafl_targets::{
     libfuzzer_initialize, CmpLogObserver, CMPLOG_MAP, EDGES_MAP,
     MAX_EDGES_NUM,
 };
+use bel::{main0};
 
 #[cfg(all(feature = "std", unix))]
 use std::time::Duration;
@@ -81,18 +82,6 @@ pub fn main() {
         opt.concolic,
     )
     .expect("An error occurred while fuzzing");
-}
-
-fn spawn_child0<I: Input + HasTargetBytes>(input: &I) -> Result<Child, Error> {
-        let fic_out = env::current_dir().unwrap().join("cur_input").to_string_lossy().to_string();
-        input.to_file(&fic_out)?;
-
-        Ok(Command::new("./target_symcc0.out")
-            .arg(&fic_out)
-            .stdin(Stdio::null())
-            .env("SYMCC_NO_SYMBOLIC_INPUT", "yes")
-            .spawn()
-            .expect("failed to start process"))
 }
 
 fn eprint_input_exit<I: Input + HasTargetBytes>(input: &I) {
@@ -181,44 +170,11 @@ fn fuzz(
     let mut harness = |input: &BytesInput| {
         use std::os::unix::prelude::ExitStatusExt;
         use wait_timeout::ChildExt;
-
-        let mut child = spawn_child0(input).expect("spawning failed");
-        match child
-            .wait_timeout(Duration::from_secs(5))
-            .expect("waiting on child failed")
-        {
-            Some(status) => {
-                match status.code()
-                {
-                    Some(0) => ExitKind::Ok,
-                    Some(code) => {
-                        eprint_input_exit(input);
-                        eprintln!("code: {:?}", code);
-                        ExitKind::Crash
-                    }
-                    None => {
-                        let signal = status.signal();
-                        eprint_input_exit(input);
-                        eprintln!("signal: {:?}", signal);
-                        match signal
-                        {
-                            // for reference: https://www.man7.org/linux/man-pages/man7/signal.7.html
-                            Some(9) => ExitKind::Oom,
-                            _ => ExitKind::Crash,
-                        }
-                    }
-                }
-            }
-            None => {
-                eprint_input_exit(input);
-                eprintln!("timeout");
-                // if this fails, there is not much we can do. let's hope it failed because the process finished
-                // in the meantime.
-                drop(child.kill());
-                // finally, try to wait to properly clean up system resources.
-                drop(child.wait());
-                ExitKind::Timeout
-            }
+        use libafl::inputs::HasBytesVec;
+        
+        match main0(input.bytes().to_vec()) {
+           Some(_) => ExitKind::Ok,
+           None => ExitKind::Crash
         }
     };
 
