@@ -376,7 +376,10 @@ where
             None
         };
 
-        if let Some(mutations) = mutations {
+        use rand::prelude::*;
+        if let Some(mut mutations) = mutations {
+            let mut rng = rand::thread_rng();
+            mutations.shuffle(&mut rng);
             let input = { testcase.borrow().input().as_ref().unwrap().clone() };
             for mutation in mutations {
                 let mut input_copy = input.to_owned();
