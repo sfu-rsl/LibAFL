@@ -346,13 +346,17 @@ where
 }
 
 #[cfg(feature = "concolic_mutation")]
+use crate::{
+    bolts::rands::Rand,
+    prelude::HasRand,
+};
 impl<E, EM, Z> Stage<E, EM, Z> for SimpleConcolicMutationalStage<Z>
 where
     E: UsesState<State = Z::State>,
     EM: UsesState<State = Z::State>,
     Z: Evaluator<E, EM>,
     Z::Input: HasBytesVec,
-    Z::State: HasClientPerfMonitor + HasExecutions + HasCorpus,
+    Z::State: HasClientPerfMonitor + HasExecutions + HasCorpus + HasRand,
 {
     #[inline]
     fn perform(
@@ -377,9 +381,11 @@ where
                 None
             };
 
-        if let Some(mutations) = mutations {
+        if let Some(mut mutations) = mutations {
             let input = { testcase.borrow().input().as_ref().unwrap().clone() };
-            for mutation in mutations {
+            while !mutations.is_empty() {
+                let mutation = mutations
+                    .swap_remove(state.rand_mut().below(mutations.len() as u64) as usize);
                 let mut input_copy = input.to_owned();
                 for (index, new_byte) in mutation {
                     input_copy.bytes_mut()[index] = new_byte;
