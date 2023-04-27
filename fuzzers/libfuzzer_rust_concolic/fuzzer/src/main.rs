@@ -172,9 +172,12 @@ fn fuzz(
         use wait_timeout::ChildExt;
         use libafl::inputs::HasBytesVec;
         
-        match main0(input.bytes().to_vec()) {
-           Some(_) => ExitKind::Ok,
-           None => ExitKind::Crash
+        let fic_out0 = "cur_input";
+        let fic_out = env::current_dir().unwrap().join(fic_out0).to_string_lossy().to_string();
+        input.to_file(&fic_out).expect("failed writing");
+        match main0(vec!["".into(), fic_out.into()]) {
+           Ok(_) => ExitKind::Ok,
+           _ => ExitKind::Crash
         }
     };
 
