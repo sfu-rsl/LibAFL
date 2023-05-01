@@ -28,8 +28,10 @@ windows_alias = "unsupported"
 dependencies = ["runtime"]
 script_runner = "@shell"
 script = '''
+SYMRUSTC_SANCOV=$PWD
 cd fuzzer
-cargo build --release
+export LIBAFL_EDGES_MAP_SIZE=524288
+RUSTFLAGS="-C llvm-args=--sanitizer-coverage-level=3 -C passes=sancov-module -L${SYMRUSTC_SANCOV} -Clink-arg=-Wl,-rpath,${SYMRUSTC_SANCOV} -lsancov" cargo build --release
 '''
 
 [tasks.test]
