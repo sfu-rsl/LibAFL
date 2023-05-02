@@ -8,6 +8,7 @@ use std::{
     env,
     path::PathBuf,
     process::{Child, Command, Stdio},
+    process,
 };
 
 use clap::{self, Parser};
@@ -172,8 +173,7 @@ fn fuzz(
         use wait_timeout::ChildExt;
         use libafl::inputs::HasBytesVec;
         
-        let fic_out0 = "cur_input";
-        let fic_out = env::current_dir().unwrap().join(fic_out0).to_string_lossy().to_string();
+        let fic_out = format!("/tmp/symrustc_libafl_input_harness_{:?}", process::id()); //TODO: tempfile()
         input.to_file(&fic_out).expect("failed writing");
         match main0(vec!["".into(), fic_out.into()]) {
            Ok(_) => ExitKind::Ok,
@@ -267,7 +267,7 @@ pub struct MyCommandConfigurator;
 
 impl CommandConfigurator for MyCommandConfigurator {
     fn spawn_child<I: Input + HasTargetBytes>(&mut self, input: &I) -> Result<Child, Error> {
-        let fic_out = env::current_dir().unwrap().join("cur_input").to_string_lossy().to_string();
+        let fic_out = format!("/tmp/symrustc_libafl_input_symcc_{:?}", process::id()); //TODO: tempfile()
         input.to_file(&fic_out)?;
 
         Ok(Command::new("./target_symcc.out")
