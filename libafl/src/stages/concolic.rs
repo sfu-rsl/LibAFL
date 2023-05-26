@@ -350,6 +350,8 @@ use crate::{
     bolts::rands::Rand,
     prelude::HasRand,
 };
+
+#[cfg(feature = "concolic_mutation")]
 impl<E, EM, Z> Stage<E, EM, Z> for SimpleConcolicMutationalStage<Z>
 where
     E: UsesState<State = Z::State>,
